@@ -1752,7 +1752,7 @@ struct ndpi_detection_module_struct *ndpi_init_detection_module(void) {
 
   if(ndpi_str == NULL) {
 #ifdef NDPI_ENABLE_DEBUG_MESSAGES
-    printf(0, NULL, NDPI_LOG_DEBUG, "ndpi_init_detection_module initial malloc failed\n");
+    NDPI_LOG(0, ndpi_str, NDPI_LOG_DEBUG, "ndpi_init_detection_module initial malloc failed for ndpi_str\n");
 #endif /* NDPI_ENABLE_DEBUG_MESSAGES */
     return NULL;
   }
@@ -1932,8 +1932,6 @@ static ndpi_default_ports_tree_node_t* ndpi_get_guessed_protocol_id(struct ndpi_
 u_int16_t ndpi_guess_protocol_id(struct ndpi_detection_module_struct *ndpi_struct,
 				 u_int8_t proto, u_int16_t sport, u_int16_t dport,
 				 u_int8_t *user_defined_proto) {
-  const void *ret;
-  ndpi_default_ports_tree_node_t node;
 
   *user_defined_proto = 0; /* Default */
   if(sport && dport) {
@@ -2896,11 +2894,11 @@ static int ndpi_init_packet_header(struct ndpi_detection_module_struct *ndpi_str
   }
 #endif							/* NDPI_DETECTION_SUPPORT_IPV6 */
 
-  if(decaps_iph->version == 4 && decaps_iph->ihl >= 5) {
+  if(decaps_iph && decaps_iph->version == 4 && decaps_iph->ihl >= 5) {
     NDPI_LOG(NDPI_PROTOCOL_UNKNOWN, ndpi_struct, NDPI_LOG_DEBUG, "ipv4 header\n");
   }
 #ifdef NDPI_DETECTION_SUPPORT_IPV6
-  else if(decaps_iph->version == 6 && l3len >= sizeof(struct ndpi_ipv6hdr) &&
+  else if(decaps_iph && decaps_iph->version == 6 && l3len >= sizeof(struct ndpi_ipv6hdr) &&
 	  (ndpi_struct->ip_version_limit & NDPI_DETECTION_ONLY_IPV4) == 0) {
     NDPI_LOG(NDPI_PROTOCOL_UNKNOWN, ndpi_struct, NDPI_LOG_DEBUG, "ipv6 header\n");
     flow->packet.iphv6 = (struct ndpi_ipv6hdr *)flow->packet.iph;
@@ -3497,14 +3495,13 @@ ndpi_protocol ndpi_detection_process_packet(struct ndpi_detection_module_struct 
 	 flow->packet.iph)) {
     u_int16_t sport, dport;
     u_int8_t protocol;
-    u_int32_t saddr, daddr;
     u_int8_t user_defined_proto;
 
     flow->protocol_id_already_guessed = 1;
 
 #ifdef NDPI_DETECTION_SUPPORT_IPV6
     if(flow->packet.iphv6 != NULL) {
-      protocol = flow->packet.iphv6->ip6_ctlun.ip6_un1.ip6_un1_nxt, saddr = 0, daddr = 0;
+      protocol = flow->packet.iphv6->ip6_ctlun.ip6_un1.ip6_un1_nxt;
     } else
 #endif
       {
@@ -4474,6 +4471,9 @@ const char* ndpi_category_str(ndpi_protocol_category_t category) {
 	break;
   case NDPI_PROTOCOL_CATEGORY_SYSTEM:
     return("System");
+	break;
+  case NDPI_PROTOCOL_CATEGORY_UNSPECIFIED:
+    return("Unspecified");
 	break;
   }
 
